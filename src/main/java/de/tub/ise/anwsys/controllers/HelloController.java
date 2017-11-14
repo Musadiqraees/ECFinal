@@ -33,4 +33,19 @@ public class HelloController {
             return ResponseEntity.ok(String.format("Welcome new User %s!", u.getName()));
         }
     }
+    
+    
+
+   
+    
+    
+    @RequestMapping(method = RequestMethod.GET, path = "/pizza")
+    public ResponseEntity<?> OrderPizza(@RequestParam(value = "name", defaultValue = "AnwSys Student") String name, @RequestParam (value = "Id", defaultValue = "23" ) Integer Id
+            , @RequestParam (value = "size", defaultValue = "23" ) Integer size
+            , @RequestParam(value = "price", defaultValue = "23" ) float price) {
+    	
+    	return ResponseEntity.ok(String.format("Welcome new User %s!", name+price+size)); 
+    	
+    	
+    }
 }
