@@ -1,6 +1,7 @@
 package de.tub.ise.anwsys.models;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -13,7 +14,7 @@ public final class Pizza implements Serializable {
 	 */
 	private static final long serialVersionUID = -6009190778756332608L;
 
-	@Id
+	@Id 
 	Integer id;
 	
 	String name;
@@ -26,6 +27,9 @@ public final class Pizza implements Serializable {
 		
 	}
 	Size size;
+	
+	
+	ArrayList<Integer> ToppingIds = new ArrayList<Integer> ();
 	
 	
 	public Integer getId() {
@@ -63,6 +67,15 @@ public final class Pizza implements Serializable {
 		
 		this.size=size;
 		
+	}
+	
+	public ArrayList<Integer> getToppingIds() {
+		return ToppingIds;
+	}
+	
+	public void setToppingIds(ArrayList<Integer> toppingIds)
+	{
+		ToppingIds = toppingIds;
 	}
 	 
 	
