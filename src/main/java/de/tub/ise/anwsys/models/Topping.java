@@ -20,7 +20,7 @@ public class Topping implements Serializable {
 	@Id
 	Integer id;
     String name;
-    Number  price;
+    Float  price;
     Integer   pizzaId;
     
     
@@ -45,7 +45,7 @@ public class Topping implements Serializable {
 		return name;
 	}
 	
-	public Number getPrice() {
+	public Float getPrice() {
 		return price;
 	}
 	
@@ -61,7 +61,7 @@ public class Topping implements Serializable {
 		this.name = name;
 	}
 	
-	public void setPrice(Number price) {
+	public void setPrice(Float price) {
 		this.price = price;
 	}
 	
@@ -71,7 +71,7 @@ public class Topping implements Serializable {
 		this.pizzaId = pizzaId;
 	}
 	
-	public Topping(Integer id, String name , Number price) 
+	public Topping(Integer id, String name , Float price) 
 	{
 		this.price=price;
 		this.name=name;

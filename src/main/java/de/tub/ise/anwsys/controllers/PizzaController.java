@@ -1,9 +1,12 @@
 package de.tub.ise.anwsys.controllers;
 
+import de.tub.ise.anwsys.models.OrderPizza;
 import de.tub.ise.anwsys.models.Pizza;
 
 import de.tub.ise.anwsys.models.Topping;
 import de.tub.ise.anwsys.models.Pizza.Size;
+import de.tub.ise.anwsys.repos.OrderItemRepository;
+import de.tub.ise.anwsys.repos.OrderRepository;
 import de.tub.ise.anwsys.repos.PizzaRepository;
 import de.tub.ise.anwsys.repos.UserRepository;
 import de.tub.ise.anwsys.repos.ToppingRepository;
@@ -44,10 +47,17 @@ public class PizzaController {
 	 
 	 private ToppingRepository ToppingRepository;
 	 
+	 private OrderItemRepository OrderItemRepo;
+	 
+	 private OrderRepository orderRepository;
+	 
+	 
 	 @Autowired
-	    public PizzaController(PizzaRepository PizzaRepository,ToppingRepository ToppingRepository) {
+	    public PizzaController(PizzaRepository PizzaRepository,ToppingRepository ToppingRepository,OrderItemRepository OrderItemRepo,OrderRepository orderRepository) {
 	        this.PizzaRepository = PizzaRepository;
 	        this.ToppingRepository = ToppingRepository;
+	        this.OrderItemRepo= OrderItemRepo;
+	        this.orderRepository = orderRepository;
 	    }
 	 
 	 
@@ -66,13 +76,13 @@ public class PizzaController {
 	 
 	////////Added new pizza
 	
-	@RequestMapping(method = RequestMethod.POST, path = "/Pizza" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	@RequestMapping(method = RequestMethod.POST, path = "/pizza" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> addPizza( @RequestBody Pizza pizza) {
 		 
 		 if(PizzaRepository.exists(pizza.getId())) 
 		 {
 		
-		 return ResponseEntity.ok(String.format("pizza with this ID  \"%s!\" already exist", pizza.getId() ));  
+			 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Invalid input")); 
 	 }
 		 else {
 			 
@@ -85,7 +95,7 @@ public class PizzaController {
 	
 	///update
 	
-	@RequestMapping(method = RequestMethod.PUT, path = "/Pizza/{PizzaId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	@RequestMapping(method = RequestMethod.PUT, path = "/pizza/{pizzaId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> updatePizza( @RequestBody Pizza pizza,@PathVariable Integer PizzaId) {
 		 
 		 if(PizzaRepository.findOne(PizzaId) != null) 
@@ -99,7 +109,6 @@ public class PizzaController {
 		 }
 		 else 
 		 {
-			 
 			 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("Pizza not found"));  
 		 }
 	}
@@ -110,7 +119,7 @@ public class PizzaController {
 ////////DElete pizza with PizzaId
 	
 	
- @RequestMapping(method = RequestMethod.DELETE, path = "/Pizza/{PizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+ @RequestMapping(method = RequestMethod.DELETE, path = "/pizza/{pizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<?> removePizzaWithID(@PathVariable Integer PizzaId){
 	 
 	 if(PizzaRepository.findOne(PizzaId) != null)
@@ -118,12 +127,12 @@ public class PizzaController {
 		 PizzaRepository.delete(PizzaId);
 		 
 		 return ResponseEntity.status(HttpStatus.NO_CONTENT).body("deleted");
-				 
-				 //(PizzaRepository.delete(PizzaId));
+		
 	 }
 	 else {
+		 
 	 	return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Pizza not found")); 
-  }
+      }
 	 }
 	
 	
@@ -131,25 +140,26 @@ public class PizzaController {
 ////////get pizza with PizzaId
 	
 	
-	 @RequestMapping(method = RequestMethod.GET, path = "/Pizza/{PizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
 	    public ResponseEntity<?> getPizzaWithID(@PathVariable Integer PizzaId){
 		 
 		 if(PizzaRepository.findOne(PizzaId) != null)
 		 {
-			 
-			 return ResponseEntity.ok(PizzaRepository.findOne(PizzaId));
+			  return ResponseEntity.ok(PizzaRepository.findOne(PizzaId));
 		 }
 		 
-		 else {
+		 else 
+		 {
 		 	return ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("Pizza could not be found")); 
-	  }
+	     }
+		 
 		 }
 	    
 	 
 ////////get all pizza
 		
 		
-	 @RequestMapping(method = RequestMethod.GET, path = "/Pizza",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	 @RequestMapping(method = RequestMethod.GET, path = "/pizza",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
 	    public ResponseEntity<?> getAllpizza()
 	 {
 		 ArrayList<Pizza> PizzaObjects = new ArrayList<Pizza>();
@@ -198,7 +208,7 @@ public class PizzaController {
 	 //////////////////////////////////////////////////////////////////
 	 
 	 //addingPizzaTopping
-	 @RequestMapping(method = RequestMethod.POST, path = "/Pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	 @RequestMapping(method = RequestMethod.POST, path = "/pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
 	    public ResponseEntity<?> addPizzaTopping( @RequestBody Topping topping,@PathVariable Integer pizzaId) {
 			 
 			 if(PizzaRepository.exists(pizzaId)) 
@@ -213,11 +223,19 @@ public class PizzaController {
 			
 			pizza.setToppingIds(ToppingIds);
 			
-			PizzaRepository.save(pizza);
-		
-				 
+			Float toppingCost = topping.getPrice();
 			
-			 return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new Topping for pizza."));
+			Float pizzaCost =  pizza.getPrice();
+			
+			Float totalPizzaPrice=  toppingCost+pizzaCost;
+			
+			pizza.setPrice(totalPizzaPrice);
+			
+			PizzaRepository.save(pizza);
+			
+			ToppingRepository.save(topping);
+		
+		    return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new Topping for pizza."));
 			 }
 			 else 
 			 {
@@ -229,7 +247,7 @@ public class PizzaController {
 	 
 	 
 	 //getPizzaToppings
-	 @RequestMapping(method = RequestMethod.GET, path = "/Pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
 	    public ResponseEntity<?> getPizzaToppings(@PathVariable Integer pizzaId) {
 			 
 			 if(PizzaRepository.exists(pizzaId)) 
@@ -250,10 +268,10 @@ public class PizzaController {
 		}
 		
 	 
-	 /////find pizza by Id
 	 
-	//getPizzaToppings
-		 @RequestMapping(method = RequestMethod.GET, path = "/Pizza/{pizzaId}/topping/{toppingId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+	 
+	//getListOfPizzaToppingsBYID
+		 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}/topping/{toppingId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
 		    public ResponseEntity<?> getPizzaToppingById(@PathVariable Integer pizzaId,@PathVariable Integer toppingId) {
 				 
 				 if(PizzaRepository.exists(pizzaId)) 
@@ -267,7 +285,7 @@ public class PizzaController {
 					 if(toppingObjects.contains(toppingId))
 					 {
 						 
-					Topping toppingObj	 = ToppingRepository.findOne(toppingId);
+					Topping toppingObj	= ToppingRepository.findOne(toppingId);
 						
 					return ResponseEntity.status(HttpStatus.CREATED).body(toppingObj);
 					 }
@@ -281,5 +299,88 @@ public class PizzaController {
 						
 				 } 
 			}
+		 
+		 
+		 
+		//deletePizzaToppingsBYID
+		 @RequestMapping(method = RequestMethod.DELETE, path = "/pizza/{pizzaId}/topping/{toppingId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+		    public ResponseEntity<?> deletePizzaToppingById(@PathVariable Integer pizzaId,@PathVariable Integer toppingId) {
+				 
+				 if(PizzaRepository.exists(pizzaId)) 
+				 {
+					 Pizza pizza=	PizzaRepository.findOne(pizzaId);
+					 
+					 ArrayList<Integer> toppingObjects = new ArrayList<Integer>();
+					 
+					 toppingObjects = pizza.getToppingIds();
+					 
+					 if(toppingObjects.contains(toppingId))
+					 {
+						 
+					Topping toppingObj	= ToppingRepository.findOne(toppingId);
+					
+					
+					////////price change in pizza after topping is removed
+					Float pizzaPrice =  pizza.getPrice();
+					
+					Float toppingPrice =  toppingObj.getPrice();
+					
+				 Float newPizzaPrice = pizzaPrice - toppingPrice;
+				
+				 pizza.setPrice(newPizzaPrice);
+				 
+				 
+				 //////// remove topping Id
+				 
+				 toppingObjects.remove(toppingId);
+				 
+				 pizza.setToppingIds(toppingObjects);
+				 
+				 PizzaRepository.save(pizza);
+				 
+				 
+				 
+				 /////removing topping
+				 
+				 ToppingRepository.delete(toppingId);
+						
+					return ResponseEntity.status(HttpStatus.NO_CONTENT).body(toppingObj);
+					 }
+					 
+					 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Invalid ID(s) supplied."));
+					 
+				 }
+				 else 
+				 {
+					 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(String.format("Pizza or Topping not found.")); 
+						
+				 } 
+			}
+		 
+		 
+		 
+		 ///////////////////
+		 /////////////////////////////
+		 /////////OrderItem
+		 
+		 
+			@RequestMapping(method = RequestMethod.POST, path = "/order" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+		    public ResponseEntity<?> addPizzaOrder( @RequestBody OrderPizza order) {
+				 
+				 if(orderRepository.exists(order.getId())) 
+				 {
+				
+				 return ResponseEntity.ok(String.format("Invalid Order. "));  
+			 }
+				 else {
+					 
+					 orderRepository.save(order);
+					 
+					 return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new order successfully.")); 
+						
+				 } 
+			} 
+		 
+		 
 	 
 }

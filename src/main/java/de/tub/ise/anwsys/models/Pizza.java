@@ -18,7 +18,7 @@ public final class Pizza implements Serializable {
 	Integer id;
 	
 	String name;
-	Integer price;
+	Float price;
 	
 	public enum Size
 	{
@@ -39,7 +39,7 @@ public final class Pizza implements Serializable {
 	public String getName() {
 		return name;
 	}
-	public Integer getPrice() {
+	public Float getPrice() {
 		return price;
 	}
  
@@ -58,7 +58,7 @@ public final class Pizza implements Serializable {
 		this.name = name;
 	}
 	
-	public void setPrice(Integer price) {
+	public void setPrice(Float price) {
 		this.price = price;
 	}
 	
@@ -79,7 +79,7 @@ public final class Pizza implements Serializable {
 	}
 	 
 	
-	public Pizza( String name, Integer id ,Integer price, Size size ) 
+	public Pizza( String name, Integer id ,Float price, Size size ) 
 	{
 	this.name=name;
 	this.id=id;
