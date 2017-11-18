@@ -1,5 +1,6 @@
 package de.tub.ise.anwsys.controllers;
 
+import de.tub.ise.anwsys.models.OrderItem;
 import de.tub.ise.anwsys.models.OrderPizza;
 import de.tub.ise.anwsys.models.Pizza;
 
@@ -11,9 +12,11 @@ import de.tub.ise.anwsys.repos.PizzaRepository;
 import de.tub.ise.anwsys.repos.UserRepository;
 import de.tub.ise.anwsys.repos.ToppingRepository;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -21,6 +24,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.*;
 
+import org.apache.tomcat.websocket.server.UriTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -30,6 +34,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
  
 
@@ -77,32 +83,51 @@ public class PizzaController {
 	////////Added new pizza
 	
 	@RequestMapping(method = RequestMethod.POST, path = "/pizza" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> addPizza( @RequestBody Pizza pizza) {
+    public ResponseEntity<?> addPizza( @RequestBody Pizza pizza,UriComponentsBuilder b) {
 		 
-		 if(PizzaRepository.exists(pizza.getId())) 
-		 {
-		
-			 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Invalid input")); 
-	 }
-		 else {
+//		 if(PizzaRepository.exists(pizza.getId())) 
+//		 {
+//		
+//			 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Invalid input")); 
+//	 }
+//		 else {
 			 
-			 PizzaRepository.save(pizza);
+		pizza	= PizzaRepository.save(pizza);
 			 
-			 return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new pizza.")); 
+			 HttpHeaders headers = new HttpHeaders();
+			 
+	            UriComponents uriComponents = 
+	            		b.path("/pizza/{id}").buildAndExpand(pizza.getId());
+	            
+	            headers.setLocation(uriComponents.toUri());
+	            
+	            return new ResponseEntity<>("Created new pizza",headers,HttpStatus.CREATED) ;
+	            
+			  //return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new pizza.")).created(location); 
 				
-		 } 
+		// } 
 	}
 	
 	///update
 	
 	@RequestMapping(method = RequestMethod.PUT, path = "/pizza/{pizzaId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> updatePizza( @RequestBody Pizza pizza,@PathVariable Integer PizzaId) {
+    public ResponseEntity<?> updatePizza( @RequestBody Pizza pizza,@PathVariable ("pizzaId") Integer PizzaId) {
 		 
 		 if(PizzaRepository.findOne(PizzaId) != null) 
 		 {
-              pizza.setId(PizzaId);
+              //pizza.setId(PizzaId);
 			 
-			// PizzaRepository.save(pizza);
+			 Pizza oldPizza = PizzaRepository.findOne(PizzaId);
+			 
+			 oldPizza.setName(pizza.getName());
+			 
+			 oldPizza.setPrice(pizza.getPrice());
+			 
+			 oldPizza.setSize(pizza.getSize());
+			 
+			 oldPizza.setToppingIds(pizza.getToppingIds());
+			 
+			  PizzaRepository.save(oldPizza);
 			 
 			 return ResponseEntity.status(HttpStatus.NO_CONTENT).body(String.format("Update okay")); 
 				
@@ -120,7 +145,7 @@ public class PizzaController {
 	
 	
  @RequestMapping(method = RequestMethod.DELETE, path = "/pizza/{pizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> removePizzaWithID(@PathVariable Integer PizzaId){
+    public ResponseEntity<?> removePizzaWithID(@PathVariable ("pizzaId") Integer PizzaId){
 	 
 	 if(PizzaRepository.findOne(PizzaId) != null)
 	 {
@@ -141,11 +166,11 @@ public class PizzaController {
 	
 	
 	 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}",consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-	    public ResponseEntity<?> getPizzaWithID(@PathVariable Integer PizzaId){
+	    public ResponseEntity<?> getPizzaWithID(@PathVariable ("pizzaId") Integer PizzaId){
 		 
 		 if(PizzaRepository.findOne(PizzaId) != null)
 		 {
-			  return ResponseEntity.ok(PizzaRepository.findOne(PizzaId));
+			  return ResponseEntity.ok(PizzaRepository.findOne(PizzaId) );
 		 }
 		 
 		 else 
@@ -209,7 +234,7 @@ public class PizzaController {
 	 
 	 //addingPizzaTopping
 	 @RequestMapping(method = RequestMethod.POST, path = "/pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-	    public ResponseEntity<?> addPizzaTopping( @RequestBody Topping topping,@PathVariable Integer pizzaId) {
+	    public ResponseEntity<?> addPizzaTopping( @RequestBody Topping topping,@PathVariable ("pizzaId") Integer pizzaId,UriComponentsBuilder b) {
 			 
 			 if(PizzaRepository.exists(pizzaId)) 
 			 {
@@ -218,6 +243,8 @@ public class PizzaController {
 			Pizza pizza=	PizzaRepository.findOne(pizzaId);
 			
 			ArrayList<Integer> ToppingIds= pizza.getToppingIds();
+			
+			topping=ToppingRepository.save(topping);
 			
 			ToppingIds.add(topping.getId());
 			
@@ -233,9 +260,20 @@ public class PizzaController {
 			
 			PizzaRepository.save(pizza);
 			
-			ToppingRepository.save(topping);
+			
+			
+			
+			HttpHeaders headers = new HttpHeaders();
+			 
+            UriComponents uriComponents = 
+            		b.path("/pizza/{pizzaId}/topping/{toppingId}").buildAndExpand(pizza.getId(),topping.getId());
+            
+            headers.setLocation(uriComponents.toUri());
+            
+            return new ResponseEntity<>("Created new Topping for pizza.",headers,HttpStatus.CREATED) ;
+            
 		
-		    return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new Topping for pizza."));
+		    //return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new Topping for pizza."));
 			 }
 			 else 
 			 {
@@ -248,7 +286,7 @@ public class PizzaController {
 	 
 	 //getPizzaToppings
 	 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}/topping" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-	    public ResponseEntity<?> getPizzaToppings(@PathVariable Integer pizzaId) {
+	    public ResponseEntity<?> getPizzaToppings(@PathVariable ("pizzaId") Integer pizzaId) {
 			 
 			 if(PizzaRepository.exists(pizzaId)) 
 			 {
@@ -272,7 +310,7 @@ public class PizzaController {
 	 
 	//getListOfPizzaToppingsBYID
 		 @RequestMapping(method = RequestMethod.GET, path = "/pizza/{pizzaId}/topping/{toppingId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-		    public ResponseEntity<?> getPizzaToppingById(@PathVariable Integer pizzaId,@PathVariable Integer toppingId) {
+		    public ResponseEntity<?> getPizzaToppingById(@PathVariable ("pizzaId") Integer pizzaId,@PathVariable ("toppingId") Integer toppingId) {
 				 
 				 if(PizzaRepository.exists(pizzaId)) 
 				 {
@@ -304,7 +342,7 @@ public class PizzaController {
 		 
 		//deletePizzaToppingsBYID
 		 @RequestMapping(method = RequestMethod.DELETE, path = "/pizza/{pizzaId}/topping/{toppingId}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-		    public ResponseEntity<?> deletePizzaToppingById(@PathVariable Integer pizzaId,@PathVariable Integer toppingId) {
+		    public ResponseEntity<?> deletePizzaToppingById(@PathVariable  ("pizzaId") Integer pizzaId,@PathVariable  ("toppingId") Integer toppingId) {
 				 
 				 if(PizzaRepository.exists(pizzaId)) 
 				 {
@@ -365,22 +403,110 @@ public class PizzaController {
 		 
 		 
 			@RequestMapping(method = RequestMethod.POST, path = "/order" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
-		    public ResponseEntity<?> addPizzaOrder( @RequestBody OrderPizza order) {
+		    public ResponseEntity<?> addPizzaOrder( @RequestBody OrderPizza order,UriComponentsBuilder b) {
 				 
-				 if(orderRepository.exists(order.getId())) 
+//				 if(orderRepository.exists(order.getId())) 
+//				 {
+//				
+//				 return ResponseEntity.ok(String.format("Invalid Order. "));  
+//			 }
+//				 else {
+					 
+					 ArrayList<OrderItem> arrayOfItems = order.getOrderItems();
+					 
+					 if(arrayOfItems.size() > 0) 
+					 {
+					 OrderItem itemObj= arrayOfItems.get(0);
+					 
+					 if(PizzaRepository.exists(itemObj.getPizzaId())) 
+					 {
+						 
+						 orderRepository.save(order); 
+						 
+						 HttpHeaders headers = new HttpHeaders();
+						 
+				            UriComponents uriComponents = 
+				            		b.path("/pizza/{orderId}").buildAndExpand(order.getId());
+				            
+				            headers.setLocation(uriComponents.toUri());
+				            
+				            return new ResponseEntity<>("Created new order successfully.",headers,HttpStatus.CREATED) ;
+				            
+						// return ResponseEntity.status(HttpStatus.CREATED).body(String.format("")); 
+							
+					 }	  
+					 
+					 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("Pizza Id not valid.")); 
+							
+				 }
+					 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(String.format("send proper body structure")); 
+						
+					 }
+			//} 
+		 
+			
+			/////////getting All pizza order
+			@RequestMapping(method = RequestMethod.GET, path = "/order" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+		    public ResponseEntity<?> getAllPizzaOrder( ) 
+			{
+				 
+				 if(orderRepository.count()==0) 
 				 {
 				
 				 return ResponseEntity.ok(String.format("Invalid Order. "));  
 			 }
 				 else {
 					 
-					 orderRepository.save(order);
+					 Iterable<OrderPizza> arrayOfItems = orderRepository.findAll();
 					 
-					 return ResponseEntity.status(HttpStatus.CREATED).body(String.format("Created new order successfully.")); 
+					 return ResponseEntity.status(HttpStatus.CREATED).body(arrayOfItems); 
 						
-				 } 
+				  
 			} 
 		 
-		 
+			}
+			
+			
+	/////////getting  pizza order by id
+				@RequestMapping(method = RequestMethod.GET, path = "/order/{orderid}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+			    public ResponseEntity<?> getPizzaOrder( @PathVariable ("orderid") Integer orderid) 
+				{
+					 
+					if(orderRepository.exists(orderid)) 
+					 {
+                           OrderPizza order    = orderRepository.findOne(orderid);
+						 
+						 return ResponseEntity.status(HttpStatus.CREATED).body(order); 
+				      }
+					 else 
+					 {
+						 return ResponseEntity.ok(String.format("Invalid Order. "));  
+						 
+				} 
+			 
+				}
+				
+				
+				
+				//delete  pizza by id
+				@RequestMapping(method = RequestMethod.DELETE, path = "/order/{orderid}" ,consumes = MediaType.APPLICATION_JSON_VALUE, produces = { MediaType.APPLICATION_JSON_VALUE})
+			    public ResponseEntity<?> deletePizzaOrder( @PathVariable  ("orderid") Integer orderid) 
+				{
+					 
+					if(orderRepository.exists(orderid)) 
+					 {
+                          orderRepository.delete(orderid);
+						 
+						 return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Deletion successfull"); 
+				      }
+					 else 
+					 {
+						 return ResponseEntity.ok(String.format("Invalid Order. "));  
+						 
+				} 
+			 
+				}
+				
+				
 	 
 }

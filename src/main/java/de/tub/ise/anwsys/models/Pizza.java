@@ -4,7 +4,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.validation.constraints.NotNull;
 
 @Entity
 public final class Pizza implements Serializable {
@@ -15,10 +18,15 @@ public final class Pizza implements Serializable {
 	private static final long serialVersionUID = -6009190778756332608L;
 
 	@Id 
+	@GeneratedValue(strategy=GenerationType.AUTO)
 	Integer id;
 	
+	@NotNull
 	String name;
+	
+	@NotNull
 	Float price;
+	
 	
 	public enum Size
 	{
@@ -26,6 +34,7 @@ public final class Pizza implements Serializable {
 		Standard, Large 
 		
 	}
+	@NotNull
 	Size size;
 	
 	
@@ -50,9 +59,9 @@ public final class Pizza implements Serializable {
 		return size;
 	}
 	
-	public void setId(Integer id) {
-		this.id = id;
-	}
+//	public void setId(Integer id) {
+//		this.id = id;
+//	}
 	
 	public void setName(String name) {
 		this.name = name;
@@ -79,10 +88,10 @@ public final class Pizza implements Serializable {
 	}
 	 
 	
-	public Pizza( String name, Integer id ,Float price, Size size ) 
+	public Pizza( String name,Float price, Size size ) 
 	{
 	this.name=name;
-	this.id=id;
+	//this.id=id;
 	this.price=price;
 	this.size=size;
 	}
